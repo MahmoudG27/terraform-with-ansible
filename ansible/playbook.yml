@@ -1,0 +1,44 @@
+- name: Install Ansible on public EC2
+  hosts: nginx
+  tasks:
+    - name: Install epel-release and python-pip
+      yum:
+        name:
+          - epel-release
+          - python-pip
+        state: present
+
+    - name: Install Ansible
+      pip:
+        name: ansible
+        state: latest
+
+- name: Install Docker on private EC2
+  hosts: DB
+  tasks:
+    - name: Copy Docker installation files
+      copy:
+        src: files/docker-installation/
+        dest: /home/ec2-user/docker-installation/
+        mode: 0644
+
+    - name: Install Docker dependencies
+      yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+      notify: restart docker
+
+    - name: Install Docker
+      shell: /home/ec2-user/docker-installation/install-docker.sh
+      args:
+        chdir: /home/ec2-user/docker-installation
+      notify: restart docker
+
+  handlers:
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
